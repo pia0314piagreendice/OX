@@ -3,16 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>特殊◯×ゲーム</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- React & React DOM CDNs -->
+  <title>Special Tic-Tac-Toe</title>
+  
+  <!-- React & ReactDOM (CDN) -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <!-- Babel CDN for compiling JSX directly in browser -->
+  
+  <!-- Babel (JSX Transpiler) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Tailwind CSS (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    @keyframes flip {
+      0% { transform: rotateY(0deg); }
+      50% { transform: rotateY(90deg); }
+      100% { transform: rotateY(0deg); }
+    }
+    .animate-flip {
+      animation: flip 0.4s ease-in-out;
+    }
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.05); }
+    }
+    .animate-pulse-bg {
+      animation: pulse-slow 8s infinite ease-in-out;
+    }
+  </style>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen">
+<body class="m-0 p-0 font-sans antialiased select-none">
   <div id="root"></div>
 
   <script type="text/babel">
@@ -38,16 +59,16 @@
       return board.every(cell => cell !== null) && !checkWin(board, playerSymbol) && !checkWin(board, cpuSymbol);
     };
 
+    // Stage 1: Othello flipper
     const flipPieces = (board, index, symbol) => {
       const newBoard = [...board];
       newBoard[index] = symbol;
       const opponent = symbol === 'O' ? 'X' : 'O';
       const directions = [
         [-1, -1], [0, -1], [1, -1],
-        [-1,  0],          [1,  0],
-        [-1,  1], [0,  1], [1,  1]
+        [-1, 0],           [1, 0],
+        [-1, 1],  [0, 1],  [1, 1]
       ];
-      
       const x = index % 3;
       const y = Math.floor(index / 3);
 
@@ -55,6 +76,7 @@
         let currX = x + dx;
         let currY = y + dy;
         const flips = [];
+
         while (currX >= 0 && currX < 3 && currY >= 0 && currY < 3) {
           const idx = currY * 3 + currX;
           if (board[idx] === opponent) {
@@ -69,9 +91,11 @@
           currY += dy;
         }
       });
+
       return newBoard;
     };
 
+    // Stage 3: Combination placement
     const applyStage3Move = (board, index, symbol, targetSymbol = null) => {
       const newBoard = [...board];
       if (newBoard[index] === null) {
@@ -82,6 +106,7 @@
       return newBoard;
     };
 
+    // Minimax AI
     const minimax = (stage, board, isMaxTurn, cpuSymbol, depth, alpha, beta) => {
       const playerSymbol = cpuSymbol === 'O' ? 'X' : 'O';
       const currentSymbol = isMaxTurn ? cpuSymbol : playerSymbol;
@@ -115,7 +140,7 @@
         if (stage === 1) {
           newBoard = flipPieces(board, move, currentSymbol);
         } else {
-          newBoard = applyStage3Move(board, move, currentSymbol, 'VENUS');
+          newBoard = applyStage3Move(board, move, currentSymbol, isMaxTurn ? 'VENUS' : 'EARTH');
         }
 
         const result = minimax(stage, newBoard, !isMaxTurn, cpuSymbol, depth + 1, alpha, beta);
@@ -146,396 +171,467 @@
       const playerSymbol = cpuSymbol === 'O' ? 'X' : 'O';
 
       for (let i of emptyIndices) {
-        const temp = [...board];
-        temp[i] = cpuSymbol;
-        if (checkWin(temp, cpuSymbol)) return i;
+        const testBoard = [...board];
+        testBoard[i] = cpuSymbol;
+        if (checkWin(testBoard, cpuSymbol)) return i;
       }
       for (let i of emptyIndices) {
-        const temp = [...board];
-        temp[i] = playerSymbol;
-        if (checkWin(temp, playerSymbol)) return i;
+        const testBoard = [...board];
+        testBoard[i] = playerSymbol;
+        if (checkWin(testBoard, playerSymbol)) return i;
       }
+      if (emptyIndices.includes(4)) return 4;
+
+      const corners = [0, 2, 6, 8].filter(i => emptyIndices.includes(i));
+      if (corners.length > 0) return corners[Math.floor(Math.random() * corners.length)];
+
       return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
     };
 
-    const SymbolIcon = ({ symbol, className = "" }) => {
-      const UNIFIED_COLOR = "text-sky-300 font-black";
-
-      if (symbol === 'O') return <span className={`${UNIFIED_COLOR} ${className}`}>○</span>;
-      if (symbol === 'X') return <span className={`${UNIFIED_COLOR} ${className}`}>×</span>;
-      if (symbol === 'VENUS') {
-        return (
-          <svg className={`w-3/5 h-3/5 stroke-purple-400 fill-none stroke-[2.5] ${className}`} viewBox="0 0 24 24">
-            <circle cx="12" cy="9" r="6" />
-            <line x1="12" y1="15" x2="12" y2="22" />
-            <line x1="8" y1="19" x2="16" y2="19" />
-          </svg>
-        );
-      }
-      if (symbol === 'EARTH') {
-        return (
-          <svg className={`w-3/5 h-3/5 stroke-emerald-400 fill-none stroke-[2.5] ${className}`} viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="9" />
-            <line x1="12" y1="3" x2="12" y2="21" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-          </svg>
-        );
-      }
-      return null;
-    };
-
-    function SpecialTicTacToe() {
+    function App() {
       const [stage, setStage] = useState(1);
-      const [gameState, setGameState] = useState('SELECTION'); // SELECTION, PLAYING, ENDING, RESULT, ALL_CLEAR
       const [playerSymbol, setPlayerSymbol] = useState(null);
       const [cpuSymbol, setCpuSymbol] = useState(null);
       const [board, setBoard] = useState(Array(9).fill(null));
-      const [currentTurn, setCurrentTurn] = useState('O');
-      const [winner, setWinner] = useState(null);
-      const [flippedIndices, setFlippedIndices] = useState([]);
+      const [flippedCells, setFlippedCells] = useState([]);
+      const [isPlayerTurn, setIsPlayerTurn] = useState(true);
+      const [gameState, setGameState] = useState('select'); // 'select' | 'playing' | 'win' | 'lose' | 'draw'
+      const [showOverlay, setShowOverlay] = useState(false);
+      const [loseMessage, setLoseMessage] = useState('');
+      const [winMessage, setWinMessage] = useState('win!');
 
-      const boardRef = useRef(board);
-      const gameStateRef = useRef(gameState);
+      const speedIntervalRef = useRef(null);
 
-      useEffect(() => { boardRef.current = board; }, [board]);
-      useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
+      const resetGame = () => {
+        setPlayerSymbol(null);
+        setCpuSymbol(null);
+        setBoard(Array(9).fill(null));
+        setFlippedCells([]);
+        setGameState('select');
+        setShowOverlay(false);
+        setIsPlayerTurn(true);
+        if (speedIntervalRef.current) clearInterval(speedIntervalRef.current);
+      };
 
-      const handleMove = useCallback((index, symbol, targetSymbol = null) => {
-        if (gameStateRef.current !== 'PLAYING') return;
+      const nextStage = () => {
+        setStage(prev => prev + 1);
+        resetGame();
+      };
 
-        const currentBoard = boardRef.current;
-        let newBoard = [...currentBoard];
+      const handleSelectSymbol = (symbol) => {
+        const cpu = symbol === 'O' ? 'X' : 'O';
+        setPlayerSymbol(symbol);
+        setCpuSymbol(cpu);
+        setBoard(Array(9).fill(null));
+        setFlippedCells([]);
+        setGameState('playing');
+        setShowOverlay(false);
+
+        if (symbol === 'X') {
+          setIsPlayerTurn(false);
+        } else {
+          setIsPlayerTurn(true);
+        }
+      };
+
+      const handleEndGame = (state, loseMsg = '', winMsg = 'win!') => {
+        setGameState(state);
+        setLoseMessage(loseMsg);
+        setWinMessage(winMsg);
+        setTimeout(() => {
+          setShowOverlay(true);
+        }, 1000);
+      };
+
+      const triggerCpuMove = useCallback((currentBoard) => {
+        if (gameState !== 'playing') return;
+
+        let moveIndex = -1;
+        if (stage === 1 || stage === 3) {
+          const res = minimax(stage, currentBoard, true, cpuSymbol, 0, -Infinity, Infinity);
+          moveIndex = res.move;
+        } else if (stage === 2) {
+          moveIndex = getStage2Move(currentBoard, cpuSymbol);
+        }
+
+        if (moveIndex !== -1 && moveIndex !== undefined) {
+          executeMove(moveIndex, cpuSymbol, false, null);
+        }
+      }, [gameState, stage, cpuSymbol]);
+
+      useEffect(() => {
+        if (gameState === 'playing' && !isPlayerTurn && stage !== 2) {
+          const timer = setTimeout(() => {
+            triggerCpuMove(board);
+          }, 400);
+          return () => clearTimeout(timer);
+        }
+      }, [isPlayerTurn, gameState, board, stage, triggerCpuMove]);
+
+      useEffect(() => {
+        if (stage === 2 && gameState === 'playing') {
+          speedIntervalRef.current = setInterval(() => {
+            setBoard(prevBoard => {
+              if (checkWin(prevBoard, playerSymbol) || checkWin(prevBoard, cpuSymbol) || checkDraw(prevBoard, 2, playerSymbol, cpuSymbol)) {
+                return prevBoard;
+              }
+              const move = getStage2Move(prevBoard, cpuSymbol);
+              if (move !== -1) {
+                const nextBoard = [...prevBoard];
+                nextBoard[move] = cpuSymbol;
+
+                if (checkWin(nextBoard, cpuSymbol)) {
+                  handleEndGame('lose', '実はスピード勝負だった！');
+                } else if (checkDraw(nextBoard, 2, playerSymbol, cpuSymbol)) {
+                  handleEndGame('draw');
+                }
+                return nextBoard;
+              }
+              return prevBoard;
+            });
+          }, 650);
+
+          return () => {
+            if (speedIntervalRef.current) clearInterval(speedIntervalRef.current);
+          };
+        }
+      }, [stage, gameState, playerSymbol, cpuSymbol]);
+
+      const executeMove = (index, symbol, isPlayer, targetSymbol = null) => {
+        let newBoard;
+        let changedIndices = [index];
 
         if (stage === 1) {
-          newBoard = flipPieces(newBoard, index, symbol);
-          
-          const newlyFlipped = [];
-          newBoard.forEach((val, i) => {
-            if (i !== index && currentBoard[i] !== null && currentBoard[i] !== val) {
-              newlyFlipped.push(i);
-            }
-          });
-          if (newlyFlipped.length > 0) {
-            setFlippedIndices(newlyFlipped);
-            setTimeout(() => setFlippedIndices([]), 600);
-          }
+          const boardAfterFlip = flipPieces(board, index, symbol);
+          changedIndices = boardAfterFlip.map((val, i) => val !== board[i] ? i : -1).filter(i => i !== -1);
+          newBoard = boardAfterFlip;
         } else if (stage === 3) {
-          newBoard = applyStage3Move(newBoard, index, symbol, targetSymbol);
+          newBoard = applyStage3Move(board, index, symbol, targetSymbol);
         } else {
+          newBoard = [...board];
           newBoard[index] = symbol;
         }
 
+        setFlippedCells(changedIndices);
         setBoard(newBoard);
-        boardRef.current = newBoard;
 
-        const cpuSym = cpuSymbol || (symbol === 'O' ? 'X' : 'O');
-        const pSym = playerSymbol || (symbol === 'O' ? 'X' : 'O');
-
-        const triggerResult = (winResult) => {
-          setWinner(winResult);
-          setGameState('ENDING');
-          setTimeout(() => {
-            setGameState('RESULT');
-          }, 1000); // 1-second delay before displaying win/lose popups
-        };
+        const playerWon = checkWin(newBoard, playerSymbol) || checkWin(newBoard, 'EARTH');
+        const cpuWon = checkWin(newBoard, cpuSymbol) || checkWin(newBoard, 'VENUS');
+        const isDraw = checkDraw(newBoard, stage, playerSymbol, cpuSymbol);
 
         if (stage === 3) {
           if (checkWin(newBoard, 'EARTH')) {
-            triggerResult('earth_win');
+            handleEndGame('win', '', '地球人win!');
             return;
           }
           if (checkWin(newBoard, 'VENUS')) {
-            triggerResult('venus_win');
+            handleEndGame('lose', '実は相手は金星人だった！', '金星人win!');
             return;
           }
         }
 
-        if (checkWin(newBoard, symbol)) {
-          triggerResult(symbol === pSym ? 'player' : 'cpu');
-          return;
-        }
-
-        if (checkDraw(newBoard, stage, pSym, cpuSym)) {
-          triggerResult('draw');
-          return;
-        }
-
-        if (stage !== 2) {
-          setCurrentTurn(prev => prev === 'O' ? 'X' : 'O');
-        }
-      }, [stage, playerSymbol, cpuSymbol]);
-
-      useEffect(() => {
-        if (gameState === 'PLAYING' && stage !== 2 && currentTurn === cpuSymbol) {
-          const timer = setTimeout(() => {
-            if (gameStateRef.current !== 'PLAYING') return;
-            const aiResult = minimax(stage, boardRef.current, true, cpuSymbol, 0, -Infinity, Infinity);
-            if (aiResult.move !== -1) {
-              handleMove(aiResult.move, cpuSymbol, 'VENUS');
-            }
-          }, 500);
-          return () => clearTimeout(timer);
-        }
-      }, [currentTurn, gameState, stage, cpuSymbol, handleMove]);
-
-      useEffect(() => {
-        if (gameState !== 'PLAYING' || stage !== 2) return;
-        const interval = setInterval(() => {
-          if (gameStateRef.current !== 'PLAYING') return;
-          const aiMove = getStage2Move(boardRef.current, cpuSymbol);
-          if (aiMove !== -1) {
-            handleMove(aiMove, cpuSymbol);
+        if (playerWon) {
+          handleEndGame('win');
+        } else if (cpuWon) {
+          let lossReason = '';
+          if (stage === 1) lossReason = '実はオセロだった！';
+          if (stage === 2) lossReason = '実はスピード勝負だった！';
+          if (stage === 3) lossReason = '実は相手は金星人だった！';
+          handleEndGame('lose', lossReason);
+        } else if (isDraw) {
+          handleEndGame('draw');
+        } else {
+          if (stage !== 2) {
+            setIsPlayerTurn(!isPlayer);
           }
-        }, 666);
-        return () => clearInterval(interval);
-      }, [gameState, stage, cpuSymbol, handleMove]);
-
-      const selectSymbol = (sym) => {
-        const opp = sym === 'O' ? 'X' : 'O';
-        setPlayerSymbol(sym);
-        setCpuSymbol(opp);
-        setBoard(Array(9).fill(null));
-        setCurrentTurn('O');
-        setGameState('PLAYING');
+        }
       };
 
-      const onCellClick = (e, index) => {
-        if (gameState !== 'PLAYING') return;
-        const b = boardRef.current;
+      const handleCellClick = (index, event) => {
+        if (gameState !== 'playing') return;
+        if (stage !== 2 && !isPlayerTurn) return;
 
-        if (stage !== 2 && currentTurn !== playerSymbol) return;
+        if (stage === 1 || stage === 2) {
+          if (board[index] !== null) return;
+          executeMove(index, playerSymbol, true);
+        } else if (stage === 3) {
+          if (board[index] === playerSymbol || board[index] === 'EARTH' || board[index] === 'VENUS') {
+            return;
+          }
+          let targetSymbol = null;
+          if (board[index] === cpuSymbol) {
+            const rect = event.currentTarget.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const distance = Math.sqrt(Math.pow(clickX - centerX, 2) + Math.pow(clickY - centerY, 2));
 
-        let targetSymbol = null;
-
-        if (stage === 3) {
-          if (b[index] !== null && b[index] !== cpuSymbol) return;
-
-          if (b[index] === cpuSymbol) {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
-            const width = rect.width;
-            const height = rect.height;
-
-            const centerX = width / 2;
-            const centerY = height / 2;
-            const distFromCenter = Math.sqrt(Math.pow(clickX - centerX, 2) + Math.pow(clickY - centerY, 2));
-            const maxRadius = Math.min(width, height) / 2;
-
-            if (distFromCenter < maxRadius * 0.5) {
+            if (distance < rect.width * 0.28) {
               targetSymbol = 'EARTH';
             } else {
               targetSymbol = 'VENUS';
             }
           }
-        } else {
-          if (b[index] !== null) return;
-        }
-
-        handleMove(index, playerSymbol, targetSymbol);
-      };
-
-      const proceedNextStage = () => {
-        if (stage === 3) {
-          setGameState('ALL_CLEAR');
-        } else {
-          setStage(s => s + 1);
-          resetToSelection();
+          executeMove(index, playerSymbol, true, targetSymbol);
         }
       };
 
-      const resetToSelection = () => {
-        setBoard(Array(9).fill(null));
-        setPlayerSymbol(null);
-        setCpuSymbol(null);
-        setWinner(null);
-        setGameState('SELECTION');
+      // --- STAGE THEME STYLES ---
+      const getThemeClasses = () => {
+        switch (stage) {
+          case 1:
+            return {
+              bg: 'bg-gradient-to-br from-slate-900 via-teal-950 to-emerald-950 text-slate-100',
+              accent: 'text-emerald-400',
+              boardBg: 'bg-emerald-900/40 border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.15)]',
+              cellBg: 'bg-slate-900/80 hover:bg-slate-800/90 border-emerald-500/20 text-emerald-300',
+              cellBorder: 'border-emerald-500/20',
+              badge: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+            };
+          case 2:
+            return {
+              bg: 'bg-gradient-to-br from-slate-950 via-purple-950 to-pink-950 text-slate-100',
+              accent: 'text-pink-400',
+              boardBg: 'bg-purple-900/40 border-pink-500/30 shadow-[0_0_50px_rgba(236,72,153,0.2)]',
+              cellBg: 'bg-slate-900/80 hover:bg-slate-800/90 border-pink-500/20 text-pink-300',
+              cellBorder: 'border-pink-500/20',
+              badge: 'bg-pink-500/10 text-pink-300 border-pink-500/30'
+            };
+          case 3:
+            return {
+              bg: 'bg-gradient-to-br from-gray-950 via-slate-900 to-amber-950 text-amber-100',
+              accent: 'text-amber-400',
+              boardBg: 'bg-amber-950/30 border-amber-500/30 shadow-[0_0_60px_rgba(245,158,11,0.15)]',
+              cellBg: 'bg-black/70 hover:bg-slate-900/80 border-amber-500/20 text-amber-200',
+              cellBorder: 'border-amber-500/20',
+              badge: 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+            };
+          default:
+            return {};
+        }
       };
 
-      const getStageLossMessage = () => {
-        if (stage === 1) return '実はオセロだった！';
-        if (stage === 2) return '実はスピード勝負だった！';
-        if (stage === 3) return '実は相手は金星人だった！';
-        return '';
+      const theme = getThemeClasses();
+
+      const renderSymbol = (cell, index) => {
+        if (!cell) return null;
+
+        const isFlipped = flippedCells.includes(index);
+        const animClass = isFlipped ? 'animate-flip' : 'animate-pop';
+
+        if (cell === 'O') {
+          return (
+            <div className={`w-3/5 h-3/5 rounded-full border-[6px] border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] ${animClass}`} />
+          );
+        }
+        if (cell === 'X') {
+          return (
+            <div className={`relative w-3/5 h-3/5 flex items-center justify-center ${animClass}`}>
+              <div className="absolute w-full h-1.5 bg-cyan-400 rounded-full rotate-45 shadow-[0_0_15px_rgba(34,211,238,0.5)]" />
+              <div className="absolute w-full h-1.5 bg-cyan-400 rounded-full -rotate-45 shadow-[0_0_15px_rgba(34,211,238,0.5)]" />
+            </div>
+          );
+        }
+        if (cell === 'VENUS') {
+          return (
+            <div className={`w-3/5 h-3/5 flex items-center justify-center text-pink-400 ${animClass}`}>
+              <svg viewBox="0 0 100 120" className="w-full h-full stroke-pink-400 fill-none stroke-[10] drop-shadow-[0_0_10px_rgba(244,114,182,0.6)]">
+                <circle cx="50" cy="40" r="30" />
+                <line x1="50" y1="70" x2="50" y2="110" />
+                <line x1="30" y1="90" x2="70" y2="90" />
+              </svg>
+            </div>
+          );
+        }
+        if (cell === 'EARTH') {
+          return (
+            <div className={`w-3/5 h-3/5 flex items-center justify-center text-amber-300 ${animClass}`}>
+              <svg viewBox="0 0 100 100" className="w-full h-full stroke-amber-300 fill-none stroke-[9] drop-shadow-[0_0_10px_rgba(252,211,77,0.6)]">
+                <circle cx="50" cy="50" r="40" />
+                <line x1="50" y1="10" x2="50" y2="90" />
+                <line x1="10" y1="50" x2="90" y2="50" />
+              </svg>
+            </div>
+          );
+        }
+        return null;
       };
 
       return (
-        <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 font-sans selection:bg-slate-700">
+        <div className={`min-h-screen transition-colors duration-1000 ${theme.bg} flex flex-col items-center justify-between p-4 sm:p-6 relative overflow-hidden font-sans`}>
           
-          {/* Universal Rule Subtitle */}
-          <div className="absolute top-6 w-full text-center px-4">
-            <h1 className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-sky-300 drop-shadow">
+          {/* Top Stage Indicator */}
+          <header className="w-full max-w-md flex flex-col items-center gap-2 mt-2 z-10">
+            <div className="flex items-center gap-3">
+              <span className={`px-4 py-1 rounded-full border text-xs font-semibold uppercase tracking-widest backdrop-blur-md ${theme.badge}`}>
+                STAGE {stage} / 3
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 text-center tracking-wide">
               自分の記号が3つ揃ったら勝ち、揃えられたら負け
-            </h1>
-            {gameState !== 'SELECTION' && gameState !== 'ALL_CLEAR' && (
-              <div className="mt-1 flex items-center justify-center gap-2">
-                <span className="text-slate-400 font-bold text-sm tracking-widest">STAGE {stage}</span>
-              </div>
+            </p>
+          </header>
+
+          {/* Turn / Status Display */}
+          <div className="w-full max-w-md my-4 flex items-center justify-center gap-8 z-10">
+            {playerSymbol && (
+              <>
+                <div className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl border backdrop-blur-md transition-all duration-300 ${
+                  isPlayerTurn && gameState === 'playing'
+                    ? 'bg-slate-800/90 border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.3)] scale-105'
+                    : 'bg-slate-900/40 border-slate-700/50 opacity-50'
+                }`}>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[10px] uppercase font-bold text-slate-400">YOU</span>
+                    <span className="text-xl font-black text-cyan-400">{playerSymbol}</span>
+                  </div>
+                  {isPlayerTurn && gameState === 'playing' && (
+                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+                  )}
+                </div>
+
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">VS</div>
+
+                <div className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl border backdrop-blur-md transition-all duration-300 ${
+                  !isPlayerTurn && gameState === 'playing'
+                    ? 'bg-slate-800/90 border-rose-400 shadow-[0_0_20px_rgba(251,113,133,0.3)] scale-105'
+                    : 'bg-slate-900/40 border-slate-700/50 opacity-50'
+                }`}>
+                  {(!isPlayerTurn && gameState === 'playing') && (
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-400 animate-ping" />
+                  )}
+                  <div className="flex flex-col items-center">
+                    <span className="text-[10px] uppercase font-bold text-slate-400">CPU</span>
+                    <span className="text-xl font-black text-rose-400">{cpuSymbol}</span>
+                  </div>
+                </div>
+              </>
             )}
           </div>
 
-          {gameState === 'ALL_CLEAR' ? (
-            <div className="text-center animate-fade-in-up">
-              <div className="text-emerald-400 font-extrabold text-2xl tracking-widest mb-2">CLEAR!</div>
-              <h2 className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-blue-500 drop-shadow-lg mb-8">
-                地球人 Win!
-              </h2>
-              <p className="text-slate-300 text-lg mb-8">見事に金星人の野望を打ち砕きました！</p>
-              <button 
-                onClick={() => { setStage(1); resetToSelection(); }}
-                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-600 hover:to-emerald-600 text-white font-bold rounded-full shadow-lg transition-transform hover:scale-105"
-              >
-                最初からあそぶ
-              </button>
-            </div>
-          ) : gameState === 'SELECTION' ? (
-            <div className="flex flex-col items-center bg-slate-800 p-8 rounded-3xl shadow-2xl border border-slate-700 w-full max-w-md">
-              <h2 className="text-2xl font-bold mb-8">記号を選択してください</h2>
-              <div className="flex gap-8">
-                <button 
-                  onClick={() => selectSymbol('O')}
-                  className="w-32 h-32 flex items-center justify-center text-6xl bg-slate-700 hover:bg-slate-600 rounded-2xl shadow-lg transition-transform hover:scale-105 active:scale-95 border-2 border-slate-500/30 hover:border-slate-400"
+          {/* 3x3 Game Board */}
+          <main className="w-full max-w-md aspect-square my-auto p-3 z-10">
+            <div className={`w-full h-full rounded-3xl border backdrop-blur-xl p-3 grid grid-cols-3 grid-rows-3 gap-3 transition-all duration-500 ${theme.boardBg}`}>
+              {board.map((cell, idx) => (
+                <button
+                  key={idx}
+                  onClick={(e) => handleCellClick(idx, e)}
+                  disabled={gameState !== 'playing'}
+                  className={`w-full h-full aspect-square rounded-2xl border flex items-center justify-center transition-all duration-200 relative overflow-hidden active:scale-95 ${theme.cellBg} ${theme.cellBorder}`}
                 >
-                  <SymbolIcon symbol="O" />
+                  {renderSymbol(cell, idx)}
                 </button>
-                <button 
-                  onClick={() => selectSymbol('X')}
-                  className="w-32 h-32 flex items-center justify-center text-6xl bg-slate-700 hover:bg-slate-600 rounded-2xl shadow-lg transition-transform hover:scale-105 active:scale-95 border-2 border-slate-500/30 hover:border-slate-400"
-                >
-                  <SymbolIcon symbol="X" />
-                </button>
-              </div>
+              ))}
             </div>
-          ) : (
-            <div className="flex flex-col items-center w-full max-w-md relative">
-              
-              {/* Player / CPU Status Bar */}
-              <div className="flex justify-between w-full mb-6 items-center bg-slate-800 p-4 rounded-2xl border border-slate-700 shadow-lg">
-                <div className={`flex flex-col items-center px-4 py-2 rounded-xl transition-colors ${stage !== 2 && currentTurn === playerSymbol && gameState === 'PLAYING' ? 'bg-slate-700 ring-2 ring-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.5)]' : ''}`}>
-                  <span className="text-xs font-bold text-slate-400 mb-1">YOU</span>
-                  <span className="text-3xl flex items-center justify-center"><SymbolIcon symbol={playerSymbol} /></span>
-                </div>
+          </main>
 
-                <div className="text-slate-500 font-bold text-sm uppercase tracking-widest">VS</div>
-
-                <div className={`flex flex-col items-center px-4 py-2 rounded-xl transition-colors ${stage !== 2 && currentTurn === cpuSymbol && gameState === 'PLAYING' ? 'bg-slate-700 ring-2 ring-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.5)]' : ''}`}>
-                  <span className="text-xs font-bold text-slate-400 mb-1">CPU</span>
-                  <span className="text-3xl flex items-center justify-center"><SymbolIcon symbol={cpuSymbol} /></span>
+          {/* Symbol Selection Modal */}
+          {gameState === 'select' && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+              <div className="bg-slate-900/90 border border-slate-700/80 p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl">
+                <h2 className="text-xl font-bold mb-2 text-white">記号を選択してください</h2>
+                <p className="text-xs text-slate-400 mb-6">どちらの記号で勝負しますか？</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => handleSelectSymbol('O')}
+                    className="p-6 rounded-2xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 font-black text-4xl transition-all duration-200 hover:scale-105 active:scale-95 flex flex-col items-center gap-2"
+                  >
+                    <span>○</span>
+                    <span className="text-xs font-normal text-cyan-300">先手</span>
+                  </button>
+                  <button
+                    onClick={() => handleSelectSymbol('X')}
+                    className="p-6 rounded-2xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 font-black text-4xl transition-all duration-200 hover:scale-105 active:scale-95 flex flex-col items-center gap-2"
+                  >
+                    <span>×</span>
+                    <span className="text-xs font-normal text-cyan-300">後手</span>
+                  </button>
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* 3x3 Grid Board with Uniform Square Cells */}
-              <div className="grid grid-cols-3 gap-3 bg-slate-700 p-3 rounded-2xl shadow-2xl relative w-full aspect-square">
-                {board.map((cell, index) => {
-                  let isClickable = false;
-                  if (gameState === 'PLAYING') {
-                    if (stage === 2) {
-                      isClickable = cell === null;
-                    } else if (currentTurn === playerSymbol) {
-                      if (stage === 3) isClickable = (cell === null || cell === cpuSymbol);
-                      else isClickable = cell === null;
-                    }
-                  }
-
-                  const isFlipped = flippedIndices.includes(index);
-
-                  return (
-                    <div 
-                      key={index}
-                      onClick={(e) => onCellClick(e, index)}
-                      className={`
-                        w-full h-full aspect-square flex items-center justify-center text-5xl sm:text-6xl md:text-7xl bg-slate-800 rounded-xl
-                        transition-all duration-200 select-none overflow-hidden relative [perspective:1000px]
-                        ${isClickable ? 'cursor-pointer hover:bg-slate-650 hover:scale-[1.02] active:scale-95 shadow-inner' : 'cursor-default'}
-                      `}
-                    >
-                      <span className={`flex items-center justify-center w-full h-full pointer-events-none transition-transform duration-500 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}>
-                        <SymbolIcon symbol={cell} />
-                      </span>
+          {/* Result Modal Overlay */}
+          {showOverlay && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-lg animate-fade-in">
+              <div className="bg-slate-900/90 border border-slate-700/80 p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl flex flex-col items-center">
+                {gameState === 'win' && (
+                  <>
+                    <div className="text-5xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 animate-bounce">
+                      {winMessage}
                     </div>
-                  );
-                })}
-
-                {/* Result Overlay */}
-                {gameState === 'RESULT' && (
-                  <div className="absolute inset-0 bg-slate-900/95 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center z-10 animate-fade-in p-4 text-center">
-                    {winner === 'earth_win' && (
+                    {stage < 3 ? (
                       <>
-                        <div className="text-emerald-400 font-black text-xl mb-1 tracking-widest">CLEAR!</div>
-                        <h2 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200 mb-6 drop-shadow-[0_0_12px_rgba(52,211,153,0.8)]">
-                          地球人win!
-                        </h2>
-                        <button onClick={proceedNextStage} className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold rounded-full shadow-lg transition-transform hover:-translate-y-1">
-                          完全クリアへ
-                        </button>
-                      </>
-                    )}
-                    {winner === 'venus_win' && (
-                      <>
-                        <h2 className="text-5xl font-black text-purple-400 mb-2 drop-shadow-[0_0_12px_rgba(192,132,252,0.6)]">
-                          金星人win!
-                        </h2>
-                        <p className="text-slate-300 font-bold mb-6 text-lg">{getStageLossMessage()}</p>
-                        <button onClick={() => { setStage(1); resetToSelection(); }} className="px-8 py-3 bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white font-bold rounded-full shadow-lg transition-transform hover:-translate-y-1">
-                          やり直す
-                        </button>
-                      </>
-                    )}
-                    {winner === 'player' && (
-                      <>
-                        <h2 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-blue-400 to-emerald-400 mb-6 drop-shadow-[0_0_10px_rgba(52,211,153,0.8)]">Win!</h2>
-                        <button onClick={proceedNextStage} className="px-8 py-3 bg-blue-500 hover:bg-blue-400 text-white font-bold rounded-full shadow-lg transition-transform hover:-translate-y-1">
+                        <p className="text-sm text-slate-300 mb-6">ステージクリア！次のステージへ進みます。</p>
+                        <button
+                          onClick={nextStage}
+                          className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-98"
+                        >
                           次のステージへ
                         </button>
                       </>
-                    )}
-                    {winner === 'cpu' && (
+                    ) : (
                       <>
-                        <h2 className="text-5xl font-black text-slate-400 mb-2 drop-shadow-lg">Lose…</h2>
-                        <p className="text-amber-300 font-bold mb-6 text-lg">{getStageLossMessage()}</p>
-                        <button onClick={() => { setStage(1); resetToSelection(); }} className="px-8 py-3 bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white font-bold rounded-full shadow-lg transition-transform hover:-translate-y-1">
-                          やり直す
+                        <p className="text-sm text-slate-300 mb-6">すべてのステージを攻略しました！全クリア！</p>
+                        <button
+                          onClick={() => { setStage(1); resetGame(); }}
+                          className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold text-sm shadow-lg shadow-amber-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-98"
+                        >
+                          最初から遊ぶ
                         </button>
                       </>
                     )}
-                    {winner === 'draw' && (
-                      <>
-                        <h2 className="text-6xl font-black text-slate-400 mb-6 drop-shadow-lg tracking-widest">DRAW</h2>
-                        <button onClick={() => { setStage(1); resetToSelection(); }} className="px-8 py-3 bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white font-bold rounded-full shadow-lg transition-transform hover:-translate-y-1">
-                          やり直す
-                        </button>
-                      </>
+                  </>
+                )}
+
+                {gameState === 'lose' && (
+                  <>
+                    <div className="text-4xl font-black mb-2 text-rose-500">
+                      Lose…
+                    </div>
+                    {loseMessage && (
+                      <div className="text-base font-bold text-amber-300 mb-4 bg-amber-500/10 border border-amber-500/20 py-2 px-4 rounded-lg w-full">
+                        {loseMessage}
+                      </div>
                     )}
-                  </div>
+                    <p className="text-xs text-slate-400 mb-6">もう一度挑戦してみましょう。</p>
+                    <button
+                      onClick={resetGame}
+                      className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold text-sm shadow-lg shadow-rose-600/25 transition-all duration-200 hover:scale-[1.02] active:scale-98"
+                    >
+                      やり直す
+                    </button>
+                  </>
+                )}
+
+                {gameState === 'draw' && (
+                  <>
+                    <div className="text-4xl font-black mb-2 text-slate-300">
+                      draw
+                    </div>
+                    <p className="text-xs text-slate-400 mb-6">引き分けです。勝負がつきませんでした。</p>
+                    <button
+                      onClick={resetGame}
+                      className="w-full py-3.5 px-6 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-sm shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-98"
+                    >
+                      やり直す
+                    </button>
+                  </>
                 )}
               </div>
-
             </div>
           )}
+
+          <footer className="text-[10px] text-slate-500 mb-2 z-10">
+            Special Tic-Tac-Toe Game
+          </footer>
         </div>
       );
     }
 
-    const rootElement = document.getElementById('root');
-    const root = ReactDOM.createRoot(rootElement);
-    root.render(<SpecialTicTacToe />);
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
   </script>
-
-  <style>
-    @keyframes fade-in {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    .animate-fade-in {
-      animation: fade-in 0.4s ease-out forwards;
-    }
-    @keyframes fade-in-up {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fade-in-up {
-      animation: fade-in-up 0.6s ease-out forwards;
-    }
-  </style>
 </body>
 </html>
